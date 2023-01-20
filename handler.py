@@ -55,6 +55,51 @@ def show_size_hash_paths(hash_groups: dict):
                 for file in file_paths:
                     print(f"{file_count}. {file}")
                     file_count += 1
+    return file_count  # returning this value is for the next step(delete duplicates)
+
+
+def index_files(hash_groups: dict):
+    counter = 1
+    index_file = {}
+    for file_size, hashes in hash_groups.items():
+        for hash, file_paths in hashes.items():
+            if len(file_paths) > 1:
+                for file in file_paths:
+                    index_file[counter] = {}
+                    index_file[counter] = file
+                    counter += 1
+    return index_file
+
+
+def delete_duplicates(index_file: dict, file_numbers: set):
+    free_size = 0
+    pop_file = [index_file.pop(k, None) for k in file_numbers]
+    for i in pop_file:
+        free_size += os.path.getsize(i)
+        # print(i)
+        os.remove(i)
+    return free_size
+
+
+def validate_input(file_count):
+    valid_input = False
+    while not valid_input:
+        try:
+            file_numbers = set(map(int, input("\nEnter file numbers to delete:\n").split()))
+        except ValueError:
+            print("Wrong format\n")
+            continue
+
+        if len(file_numbers) == 0:
+            print("Wrong format\n")
+            continue
+
+        if not file_numbers.issubset(set(range(1, file_count))):
+            print("Wrong format\n")
+            continue
+
+        valid_input = True
+    return file_numbers
 
 
 def main():
@@ -73,7 +118,17 @@ def main():
 
     if check_duplicates:
         hash_groups = get_size_hash_paths(sorted_groups)
-        show_size_hash_paths(hash_groups)
+        file_count = show_size_hash_paths(hash_groups)
+
+    while (delete_files := input("\nDelete files?\n")) not in ("yes", "no"):
+        print("Wrong option\n")
+    delete_files = delete_files == "yes"
+
+    if delete_files:
+        file_numbers = validate_input(file_count)
+        index_file = index_files(hash_groups)
+        free_size = delete_duplicates(index_file, file_numbers)
+        print(f"Total freed up space: {free_size} bytes")
 
 
 if __name__ == "__main__":
